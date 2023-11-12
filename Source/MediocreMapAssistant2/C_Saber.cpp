@@ -14,49 +14,40 @@ AC_Saber::AC_Saber()
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Scene Root"));
 	SetRootComponent(Root);
 
+	SaberComponent = CreateDefaultSubobject<USceneComponent>("Saber Component");
+	SaberComponent->SetupAttachment(GetRootComponent());
+
 	SaberHandle = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Saber Handle"));
-	SaberHandle->SetupAttachment(GetRootComponent());
+	SaberHandle->SetupAttachment(SaberComponent);
 
 	SaberMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Saber Mesh"));
 	SaberMesh->SetupAttachment(SaberHandle);
+
+	m_SwingCurveComponent = CreateDefaultSubobject<UCurveFloat>(TEXT("Spray Curve"));
+
+	m_SwingTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("Spray Timeline"));
+	m_SwingTimeline->AddInterpFloat(m_SwingCurveComponent, m_OnSwingTimelineCallback);
 }
 
-void AC_Saber::CutNote(int p_NoteCutDirection, FVector p_NotePosition, FRotator p_NoteRotation) {
-
-	FVector l_SaberLocation = GetActorLocation();
-	FVector l_NotePosition = p_NotePosition;
-
-	FRotator l_NoteRotation = p_NoteRotation;
-
-	int l_NoteDirection = p_NoteCutDirection;
-
-	FRotator l_LookRotation = UKismetMathLibrary::FindLookAtRotation(l_SaberLocation, l_NotePosition);
-
-	float l_Z = l_LookRotation.Yaw;
-
-	if (l_Z < 0) l_Z += 180;
-
-	bool l_IsReset = (m_LastNoteRotation.Pitch < l_NoteRotation.Pitch + 45 && m_LastNoteRotation.Pitch > l_NoteRotation.Pitch - 45);
-	if (m_LastNoteDirection != 1 && l_IsReset)
-		//OnPopupRequieredEvent.ExecuteIfBound(FString("Reset"));
-
-	SetActorRotation(FRotator::MakeFromEuler(FVector(GetActorRotation().Roll, GetActorRotation().Pitch, l_Z)));
-
-	FTimeline l_TimeLine = FTimeline{};
-	l_TimeLine.SetTimelineLengthMode(ETimelineLengthMode::TL_LastKeyFrame);
-
-	UCurveFloat* l_Curve = CreateDefaultSubobject<UCurveFloat>(TEXT("Curve"));
-	l_Curve->FloatCurve.AddKey(0.0f, 0.0f);
-	l_Curve->FloatCurve.AddKey(0.16f, 1.0f);
-
-	l_TimeLine.SetFloatCurve(l_Curve, TEXT("Curve"));
-
-	FOnTimelineEvent l_TimeLineEvent;
-	l_TimeLineEvent.BindUFunction(this, "OnTimelineChange");
-
-	l_TimeLine.SetTimelinePostUpdateFunc(l_TimeLineEvent);
+void AC_Saber::Swing(int p_NoteCutDirection, FVector p_NotePosition, float p_Time) {
+	SetActorRotation(FQuat::MakeFromEuler(FVector(0, (p_NoteCutDirection * 45), 0)));
+	float l_DelayBetweenNotes = p_Time - m_LastNoteTime;
+	float l_SwingDuration = 0.1f;
+	if (l_DelayBetweenNotes < 0.1f) {
+		l_SwingDuration = l_DelayBetweenNotes;
+	}
+	m_SwingTimeline->SetTimelineLength(l_SwingDuration);
+	m_SwingTimeline->SetTimelineLengthMode(ETimelineLengthMode::TL_TimelineLength);
+	m_SwingTimeline->SetPlaybackPosition(0.0f, false, false);
+	FRichCurve l_SwingCurve;
+	l_SwingCurve.AddKey(90, 0);
+	l_SwingCurve.AddKey(-90, l_SwingDuration);
+	m_SwingCurveComponent->FloatCurve = l_SwingCurve;
+	m_SwingTimeline->PlayFromStart();
 }
 
-void AC_Saber::OnTimelineChange() {
-
+void AC_Saber::OnSwingTimelineCallback(float p_Value) {
+	FRotator l_Rotator = SaberComponent->RelativeRotation;
+	l_Rotator.Roll = p_Value;
+	SaberComponent->SetRelativeRotation(l_Rotator);
 }

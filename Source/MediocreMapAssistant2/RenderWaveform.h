@@ -9,6 +9,11 @@
 #include "Engine/CanvasRenderTarget2D.h"
 #include "Engine/Canvas.h"
 #include "ProceduralMeshComponent.h"
+#include "Materials/Material.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/MaterialInterface.h"
+#include "EnvironmentSpectrograms.h"
+
 
 #include "RenderWaveform.generated.h"
 
@@ -21,12 +26,28 @@ class MEDIOCREMAPASSISTANT2_API URenderWaveform : public UBlueprintFunctionLibra
 	GENERATED_BODY()
 	
 	public:
+		static UMaterialInterface* m_WaveformMaterial;
+
 		UFUNCTION(BlueprintCallable, meta = (DisplayName = "Render Spectrogram"), Category = "Render Spectrogram")
 		static void BP_RenderWaveform(USoundWave* InSoundWaveRef, UProceduralMeshComponent* Mesh, float InSongPosition, int SizeX);
 
 		UFUNCTION(BlueprintCallable, meta = (DisplayName = "Generate Spectrogram Mesh"), Category = "Render Spectrogram")
 		static void BP_GenerateSpectrogramMesh(UProceduralMeshComponent* Mesh, int SizeX, int SizeY);
 
+		static TArray<AActor*> m_SpectrogramsActors;
+
 	private:
 		static int To1D(int x, int y, int sizeX);
+};
+
+UCLASS()
+class MEDIOCREMAPASSISTANT2_API AWaveformMaterialLoader : public AActor {
+
+	GENERATED_BODY()
+
+	public:
+
+		AWaveformMaterialLoader();
+
+		UMaterial* WaveformMaterial;
 };

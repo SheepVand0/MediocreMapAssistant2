@@ -5,6 +5,7 @@
 // KISS Headers, that we need for the decompression part
 #include "ThirdParty/Kiss_FFT/kiss_fft129/kiss_fft.h"
 #include "ThirdParty/Kiss_FFT/kiss_fft129/tools/kiss_fftnd.h"
+#include "UObject/ConstructorHelpers.h"
 
 bool bNormalizeOutputToDb = false;
 bool bShowLogDebug = false;
@@ -15,13 +16,15 @@ bool bShowErrorDebug = false;
 DECLARE_LOG_CATEGORY_EXTERN(LogRenderWave, Log, All);
 
 // Short Defines to faster debug
-#define PrintLog(TextToLog) if(bShowLogDebug) UE_LOG(LogRenderWave, Log, TextToLog)
-#define PrintWarning(TextToLog) if(bShowWarningDebug) UE_LOG(LogRenderWave, Warning, TextToLog)
-#define PrintError(TextToLog) if(bShowErrorDebug) UE_LOG(LogRenderWave, Error, TextToLog)
+//#define PrintLog(TextToLog) if(bShowLogDebug) UE_LOG(LogRenderWave, Log, TextToLog)
+//#define PrintWarning(TextToLog) if(bShowWarningDebug) UE_LOG(LogRenderWave, Warning, TextToLog)
+//#define PrintError(TextToLog) if(bShowErrorDebug) UE_LOG(LogRenderWave, Error, TextToLog)
 
 #include "Sound/SoundWave.h"
 #include "AudioDevice.h"
 #include "Runtime/Engine/Public/VorbisAudioInfo.h"
+#include "Kismet/GameplayStatics.h"
+
 #include "Developer/TargetPlatform/Public/Interfaces/IAudioFormat.h"
 
 DEFINE_LOG_CATEGORY(LogRenderWave);
@@ -35,6 +38,11 @@ DEFINE_LOG_CATEGORY(LogRenderWave);
 //
 //	return FFTValue;
 //}
+
+AWaveformMaterialLoader::AWaveformMaterialLoader() {
+	ConstructorHelpers::FObjectFinder<UMaterial>l_WaveformMaterial(TEXT("Material'/Game/Materials/Other/M_SimpleMat.M_SimpleMat'"));
+	WaveformMaterial = l_WaveformMaterial.Object;
+}
 
 void CalculateFrequencySpectrum(USoundWave* InSoundWaveRef, const float InStartTime, const float InDuration, TArray<float>& OutFrequencies)
 {
@@ -68,7 +76,7 @@ void CalculateFrequencySpectrum(USoundWave* InSoundWaveRef, const float InStartT
 
 			if (SamplesToRead < 0) {
 
-				PrintError(TEXT("Number of SamplesToRead is < 0!"));
+				//PrintError(TEXT("Number of SamplesToRead is < 0!"));
 				return;
 			}
 
@@ -174,10 +182,10 @@ void CalculateFrequencySpectrum(USoundWave* InSoundWaveRef, const float InStartT
 				KISS_FFT_FREE(Output[ChannelIndex]);
 			}
 		} else {
-			PrintError(TEXT("InSoundVisData.PCMData is a nullptr!"));
+			//PrintError(TEXT("InSoundVisData.PCMData is a nullptr!"));
 		}
 	} else {
-		PrintError(TEXT("Number of Channels is < 0!"));
+		//PrintError(TEXT("Number of Channels is < 0!"));
 	}
 }
 
@@ -217,16 +225,37 @@ void URenderWaveform::BP_RenderWaveform(USoundWave* InSoundWaveRef, UProceduralM
 
 		if (valid) CalculateFrequencySpectrum(InSoundWaveRef, startTime, duration, results);
 
+		TArray<float> l_SpectrogramsValue;
 		for (size_t j = 0; j < 64; ++j){
 			float height;
 
 			if (valid && results.Num() > (j * 8.f)) height = results[j * 8.f] / 50000.f;
 			else height = 0;
 
-			Vertices[To1D(i, j, SizeX)] = FVector(i, j, height);
-			VertexColors[To1D(i, j, SizeX)] = FLinearColor(height, 0.0f, 0.0f);
+			if (Vertices.IsValidIndex(To1D(i, j, SizeX))) {
+				Vertices[To1D(i, j, SizeX)] = FVector(i, j, height * 2.f);
+				VertexColors[To1D(i, j, SizeX)] = FLinearColor(height * 0.1f, 0.0f, 0);
+				l_SpectrogramsValue.Add(height);
+			}
+
+			if (i == 0) {
+				/*if (m_SpectrogramsActors.Num() == 0) {
+					TArray<AActor*> l_FoundActors;
+					TSubclassOf<AEnvironmentSpectrograms> l_Class;
+					UGameplayStatics::GetAllActorsOfClass(Mesh->GetWorld(), l_Class, l_FoundActors);
+					m_SpectrogramsActors = l_FoundActors;
+					UE_LOG(LogTemp, Warning, TEXT("Number of Spectrograms found : %d"), m_SpectrogramsActors.Num())
+				}*/
+
+				for (int l_i = 0; l_i < AEnvironmentSpectrograms::s_Instances.Num(); l_i++) {
+					AEnvironmentSpectrograms* l_Item = AEnvironmentSpectrograms::s_Instances[l_i];
+					l_Item->SetCurrentFrequency(l_SpectrogramsValue);
+					UE_LOG(LogTemp, Warning, TEXT("Number of Spectrograms found : %d"), AEnvironmentSpectrograms::s_Instances.Num())
+				}
+			}
 		}
 	}
+
 
 	Mesh->UpdateMeshSection_LinearColor(0, Vertices, Normals, UV0, VertexColors, Tangents);
 
@@ -286,3 +315,7 @@ int URenderWaveform::To1D(int x, int y, int sizeX)
 {
 	return (sizeX * y) + x;
 }
+
+UMaterialInterface* URenderWaveform::m_WaveformMaterial = nullptr;
+
+TArray<AActor*> URenderWaveform::m_SpectrogramsActors = TArray<AActor*>();

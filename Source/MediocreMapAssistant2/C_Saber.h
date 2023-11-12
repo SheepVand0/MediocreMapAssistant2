@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Components/TimelineComponent.h"
 #include "C_Saber.generated.h"
 
 UCLASS()
@@ -18,27 +19,47 @@ public:
 	UPROPERTY()
 		USceneComponent* Root;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(EditAnywhere)
+		USceneComponent* SaberComponent;
+
+	UPROPERTY(EditAnywhere)
 		USkeletalMeshComponent* SaberHandle;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(EditAnywhere)
 		USkeletalMeshComponent* SaberMesh;
 
-	UPROPERTY(EditAnywhere)
-		int m_LastNoteDirection;
-
-	UPROPERTY(EditAnywhere)
-		FVector m_LastNotePosition;
-
-	UPROPERTY(EditAnywhere)
-		FRotator m_LastNoteRotation;
+protected:
 
 	UFUNCTION()
-		void OnTimelineChange();
+		void OnSwingTimelineCallback(float p_Value);
+
+	UPROPERTY()
+		UTimelineComponent* m_SwingTimeline;
+
+	FOnTimelineFloat m_OnSwingTimelineCallback;
+
+	FOnTimelineEventStatic m_OnSwingTimelineFinished;
+
+	UPROPERTY()
+		int m_LastNoteDirection;
+
+	UPROPERTY()
+		FVector m_LastNotePosition;
+
+	UPROPERTY()
+		FRotator m_LastNoteRotation;
+
+	UPROPERTY()
+		float m_LastNoteTime;
+
+	UPROPERTY()
+		UCurveFloat* m_SwingCurveComponent;
+
 
 public:	
 
 	UFUNCTION(BlueprintCallable)
-		void CutNote(int p_NoteCutDirection, FVector p_NotePosition, FRotator p_NoteRotation);
-	
+		void Swing(int p_NoteCutDirection, FVector p_NotePosition, float p_Time);
+
+
 };
