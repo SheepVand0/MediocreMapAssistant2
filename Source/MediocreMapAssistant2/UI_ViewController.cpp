@@ -66,6 +66,8 @@ void UUI_ViewController::SetWidgets(TArray<UWidget*> p_Widget) {
 }
 
 void UUI_ViewController::SetWidget(int p_Index) {
+	if (m_SelectedWidgetIndex == p_Index) return;
+
 	if (m_SelectedWidget) {
 		m_LastWidget = m_SelectedWidget;
 	}
@@ -90,17 +92,16 @@ void UUI_ViewController::SetWidget(int p_Index) {
 		m_AnimationActor->SetWidget(this);
 	}
 	m_AnimationActor->PlayAnimation();
+
+	OnWidgetSelected(m_SelectedWidgetIndex);
 }
 
 void UUI_ViewController::OnViewAnimationCallback(float p_Value) {
-	UE_LOG(LogTemp, Warning, TEXT("Time : %f"), p_Value);
 	if (m_LastWidget) {
 		m_LastWidget->SetRenderTranslation(FVector2D(p_Value * (-1 * m_Res.X) , 0));
-		UE_LOG(LogTemp, Warning, TEXT("Doing for LastWidget"));
 	}
 	if (m_SelectedWidget) {
 		m_SelectedWidget->SetRenderTranslation(FVector2D(m_Res.X - (p_Value * m_Res.X), 0));
-		UE_LOG(LogTemp, Warning, TEXT("Doing for SelectedWidget"));
 	}
 }
 
@@ -121,4 +122,8 @@ void UUI_ViewController::Hide() {
 
 int UUI_ViewController::GetSelectedWidgetIndex() {
 	return m_SelectedWidgetIndex;
+}
+
+void UUI_ViewController::OnWidgetSelected(int p_Index) {
+
 }

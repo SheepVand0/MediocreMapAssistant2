@@ -75,7 +75,7 @@ public class ZipUtility : ModuleRules
     {
         bool isLibrarySupported = false;
 
-        if ((Target.Platform == UnrealTargetPlatform.Win64) || (Target.Platform == UnrealTargetPlatform.Win32))
+        if ((Target.Platform == UnrealTargetPlatform.Win64))
         {
             isLibrarySupported = true;
 
@@ -85,10 +85,10 @@ public class ZipUtility : ModuleRules
 
             PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, PlatformSubPath, "atls.lib"));
             PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, PlatformSubPath, "7zpp_u.lib"));
-            PublicLibraryPaths.Add(Path.Combine(LibrariesPath, PlatformSubPath));
+            //PublicLibraryPaths.Add(Path.Combine(LibrariesPath, PlatformSubPath));
 
             PublicDelayLoadDLLs.Add("7z.dll");
-            RuntimeDependencies.Add(new RuntimeDependency(Path.Combine(DLLPath, PlatformSubPath, "7z.dll")));
+            //RuntimeDependencies.Add(new RuntimeDependency(Path.Combine(DLLPath, PlatformSubPath, "7z.dll")));
         }
 
         if (isLibrarySupported)

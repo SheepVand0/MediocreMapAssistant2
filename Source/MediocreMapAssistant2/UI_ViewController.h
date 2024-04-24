@@ -10,6 +10,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Blueprint/WidgetTree.h"
+#include "Components/HorizontalBox.h"
+#include "Components/SizeBox.h"
+#include "Components/ScrollBox.h"
 
 
 #include "UI_ViewController.generated.h"
@@ -64,7 +67,7 @@ protected:
  * 
  */
 UCLASS()
-class MEDIOCREMAPASSISTANT2_API UUI_ViewController : public UVerticalBox
+class MEDIOCREMAPASSISTANT2_API UUI_ViewController : public UHorizontalBox
 {
 	GENERATED_BODY()
 	
@@ -79,7 +82,9 @@ protected:
 
 	FVector2D m_Res;
 
-	int m_SelectedWidgetIndex;
+	int m_SelectedWidgetIndex = -1;
+
+	virtual void OnWidgetSelected(int p_Value);
 private:
 
 	AViewControllerAnimation* m_AnimationActor;
